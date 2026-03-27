@@ -1,0 +1,74 @@
+@page "/categories"
+@inject HttpClient Http
+@inject ISnackbar Snackbar
+
+<MudText Typo="Typo.h4" GutterBottom="true">Categories</MudText>
+
+<MudPaper Class="pa-4 mb-4">
+    <MudGrid>
+        <MudItem xs="12" sm="8">
+            <MudTextField @bind-Value="newCategoryName" Label="New Category Name" Variant="Variant.Outlined" Margin="Margin.Dense"></MudTextField>
+        </MudItem>
+        <MudItem xs="12" sm="4" Class="d-flex align-center">
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="AddCategory">Add</MudButton>
+        </MudItem>
+    </MudGrid>
+</MudPaper>
+
+@if (categories == null)
+{
+    <MudProgressCircular Color="Color.Default" Indeterminate="true" />
+}
+else
+{
+    <MudTable Items="categories" Hover="true" Dense="true" Elevation="1">
+        <HeaderContent>
+            <MudTh>ID</MudTh>
+            <MudTh>Name</MudTh>
+        </HeaderContent>
+        <RowTemplate>
+            <MudTd DataLabel="ID">@context.Id</MudTd>
+            <MudTd DataLabel="Name">@context.Name</MudTd>
+        </RowTemplate>
+    </MudTable>
+}
+
+@code {
+    private List<CategoryDto>? categories;
+    private string newCategoryName = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadCategories();
+    }
+
+    private async Task LoadCategories()
+    {
+        try
+        {
+            categories = await Http.GetFromJsonAsync<List<CategoryDto>>("categories");
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add("Error loading categories", Severity.Error);
+        }
+    }
+
+    private async Task AddCategory()
+    {
+        if (string.IsNullOrWhiteSpace(newCategoryName)) return;
+
+        var newCategory = new CategoryDto { Name = newCategoryName };
+        var response = await Http.PostAsJsonAsync("categories", newCategory);
+        if (response.IsSuccessStatusCode)
+        {
+            Snackbar.Add("Category added successfully!", Severity.Success);
+            newCategoryName = "";
+            await LoadCategories();
+        }
+        else
+        {
+            Snackbar.Add("Failed to add category", Severity.Error);
+        }
+    }
+}

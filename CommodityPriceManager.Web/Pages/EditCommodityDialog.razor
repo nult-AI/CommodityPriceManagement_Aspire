@@ -1,0 +1,60 @@
+@inject HttpClient Http
+@inject ISnackbar Snackbar
+
+<MudDialog>
+    <DialogContent>
+        <MudTextField @bind-Value="Model.Name" Label="Commodity Name" Required="true" />
+        <MudSelect T="int" @bind-Value="Model.CategoryId" Label="Category" Required="true">
+            @foreach (var cat in Categories)
+            {
+                <MudSelectItem T="int" Value="@cat.Id">@cat.Name</MudSelectItem>
+            }
+        </MudSelect>
+        <MudNumericField @bind-Value="Model.CurrentPrice" Label="Update Price (VND)" Format="N0" Required="true" Min="0" />
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel">Cancel</MudButton>
+        <MudButton Color="Color.Primary" OnClick="Submit">Save Changes</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] IMudDialogInstance MudDialog { get; set; } = null!;
+    [Parameter] public CommodityDto Commodity { get; set; } = new();
+    [Parameter] public List<CategoryDto> Categories { get; set; } = new();
+
+    private CommodityDto Model = new();
+
+    protected override void OnInitialized()
+    {
+        Model = new CommodityDto
+        {
+            Id = Commodity.Id,
+            Name = Commodity.Name,
+            CategoryId = Commodity.CategoryId,
+            CurrentPrice = Commodity.CurrentPrice
+        };
+    }
+
+    private async Task Submit()
+    {
+        if (string.IsNullOrWhiteSpace(Model.Name) || Model.CategoryId == 0)
+        {
+            Snackbar.Add("Please fill out all required fields", Severity.Warning);
+            return;
+        }
+
+        var res = await Http.PutAsJsonAsync($"commodities/{Model.Id}", Model);
+        if (res.IsSuccessStatusCode)
+        {
+            Snackbar.Add("Commodity updated successfully", Severity.Success);
+            MudDialog.Close(DialogResult.Ok(true));
+        }
+        else
+        {
+            Snackbar.Add("Failed to update commodity", Severity.Error);
+        }
+    }
+
+    private void Cancel() => MudDialog.Cancel();
+}

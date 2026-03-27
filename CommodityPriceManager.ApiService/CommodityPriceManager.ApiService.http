@@ -1,0 +1,6 @@
+@CommodityPriceManager.ApiService_HostAddress = http://localhost:5177
+
+GET {{CommodityPriceManager.ApiService_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

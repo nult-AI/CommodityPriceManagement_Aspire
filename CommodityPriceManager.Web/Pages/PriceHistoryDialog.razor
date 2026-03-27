@@ -1,0 +1,56 @@
+@inject HttpClient Http
+
+<MudDialog>
+    <DialogContent>
+        @if (loading)
+        {
+            <MudProgressCircular Color="Color.Primary" Indeterminate="true" />
+        }
+        else if (histories == null || !histories.Any())
+        {
+            <MudText>No history available.</MudText>
+        }
+        else
+        {
+            <MudTable Items="histories" Dense="true" Hover="true" Elevation="0">
+                <HeaderContent>
+                    <MudTh>Date / Time</MudTh>
+                    <MudTh>Price (VND)</MudTh>
+                </HeaderContent>
+                <RowTemplate>
+                    <MudTd DataLabel="Date">@context.UpdatedAt.ToLocalTime().ToString("g")</MudTd>
+                    <MudTd DataLabel="Price">@context.Price.ToString("N0")</MudTd>
+                </RowTemplate>
+            </MudTable>
+        }
+    </DialogContent>
+    <DialogActions>
+        <MudButton Color="Color.Primary" OnClick="Close">Close</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] IMudDialogInstance MudDialog { get; set; } = null!;
+    [Parameter] public int CommodityId { get; set; }
+
+    private List<PriceHistoryDto>? histories;
+    private bool loading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            histories = await Http.GetFromJsonAsync<List<PriceHistoryDto>>($"commodities/{CommodityId}/history");
+        }
+        catch
+        {
+            // handle error
+        }
+        finally
+        {
+            loading = false;
+        }
+    }
+
+    private void Close() => MudDialog.Close(DialogResult.Ok(true));
+}

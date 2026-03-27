@@ -1,0 +1,133 @@
+@page "/"
+@inject HttpClient Http
+@inject IDialogService DialogService
+@inject ISnackbar Snackbar
+
+<MudText Typo="Typo.h4" GutterBottom="true">Commodities</MudText>
+
+<MudPaper Class="pa-4 mb-4">
+    <MudGrid>
+        <MudItem xs="12" sm="3">
+            <MudSelect T="int?" @bind-Value="selectedCategoryId" Label="Filter by Category" Variant="Variant.Outlined" Margin="Margin.Dense" Clearable="true">
+                @if (categories != null)
+                {
+                    @foreach (var cat in categories)
+                    {
+                        <MudSelectItem T="int?" Value="@cat.Id">@cat.Name</MudSelectItem>
+                    }
+                }
+            </MudSelect>
+        </MudItem>
+        <MudItem xs="12" sm="4">
+            <MudTextField @bind-Value="searchString" Label="Search by Name" Variant="Variant.Outlined" Margin="Margin.Dense" Clearable="true"></MudTextField>
+        </MudItem>
+        <MudItem xs="12" sm="5" Class="d-flex align-center justify-end">
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Add" OnClick="OpenAddDialog">Add Commodity</MudButton>
+        </MudItem>
+    </MudGrid>
+</MudPaper>
+
+@if (loading)
+{
+    <MudProgressCircular Color="Color.Default" Indeterminate="true" />
+}
+else
+{
+    <MudTable Items="FilteredCommodities" Hover="true" Dense="true" Elevation="1">
+        <HeaderContent>
+            <MudTh>ID</MudTh>
+            <MudTh>Name</MudTh>
+            <MudTh>Category</MudTh>
+            <MudTh>Price (VND)</MudTh>
+            <MudTh>Actions</MudTh>
+        </HeaderContent>
+        <RowTemplate>
+            <MudTd DataLabel="ID">@context.Id</MudTd>
+            <MudTd DataLabel="Name">@context.Name</MudTd>
+            <MudTd DataLabel="Category">@context.Category?.Name</MudTd>
+            <MudTd DataLabel="Price">@context.CurrentPrice.ToString("N0")</MudTd>
+            <MudTd DataLabel="Actions">
+                <MudIconButton Icon="@Icons.Material.Filled.Edit" Color="Color.Primary" Size="Size.Small" OnClick="@(() => OpenEditDialog(context))" tooltip="Update Price"/>
+                <MudIconButton Icon="@Icons.Material.Filled.History" Color="Color.Secondary" Size="Size.Small" OnClick="@(() => ViewHistory(context))" tooltip="Price History"/>
+            </MudTd>
+        </RowTemplate>
+    </MudTable>
+}
+
+@code {
+    private List<CommodityDto> commodities = new();
+    private List<CategoryDto> categories = new();
+    private bool loading = false;
+    private string searchString = "";
+    private int? selectedCategoryId;
+
+    private IEnumerable<CommodityDto> FilteredCommodities
+    {
+        get
+        {
+            var result = commodities.AsEnumerable();
+            if (selectedCategoryId.HasValue)
+            {
+                result = result.Where(x => x.CategoryId == selectedCategoryId.Value);
+            }
+            if (!string.IsNullOrWhiteSpace(searchString))
+            {
+                result = result.Where(x => x.Name.Contains(searchString, StringComparison.OrdinalIgnoreCase));
+            }
+            return result;
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadData();
+    }
+
+    private async Task LoadData()
+    {
+        loading = true;
+        try
+        {
+            categories = await Http.GetFromJsonAsync<List<CategoryDto>>("categories") ?? new();
+            commodities = await Http.GetFromJsonAsync<List<CommodityDto>>("commodities") ?? new();
+        }
+        catch (Exception)
+        {
+            Snackbar.Add("Error loading data", Severity.Error);
+        }
+        finally
+        {
+            loading = false;
+        }
+    }
+
+    private async Task OpenAddDialog()
+    {
+        var parameters = new DialogParameters { ["Categories"] = categories };
+        var dialog = await DialogService.ShowAsync<AddCommodityDialog>("Add Commodity", parameters);
+        var result = await dialog.Result;
+        
+        if (!result.Canceled)
+        {
+            await LoadData();
+        }
+    }
+
+    private async Task OpenEditDialog(CommodityDto commodity)
+    {
+        var parameters = new DialogParameters { ["Commodity"] = commodity, ["Categories"] = categories };
+        var dialog = await DialogService.ShowAsync<EditCommodityDialog>("Update Commodity Price", parameters);
+        var result = await dialog.Result;
+
+        if (!result.Canceled)
+        {
+            await LoadData();
+        }
+    }
+
+    private async Task ViewHistory(CommodityDto commodity)
+    {
+        var parameters = new DialogParameters { ["CommodityId"] = commodity.Id };
+        await DialogService.ShowAsync<PriceHistoryDialog>($"Price History - {commodity.Name}", parameters);
+    }
+}
