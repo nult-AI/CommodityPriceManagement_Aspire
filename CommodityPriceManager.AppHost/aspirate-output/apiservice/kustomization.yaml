@@ -1,0 +1,28 @@
+resources:
+- deployment.yaml
+- service.yaml
+
+generatorOptions:
+  disableNameSuffixHash: true
+
+configMapGenerator:
+- name: apiservice-env
+  literals:
+    - OTEL_DOTNET_EXPERIMENTAL_OTLP_RETRY=in_memory
+    - ASPNETCORE_FORWARDEDHEADERS_ENABLED=true
+    - HTTP_PORTS=8080
+    - SQLDB_HOST=postgres
+    - SQLDB_PORT=5432
+    - SQLDB_USERNAME=postgres
+    - SQLDB_PASSWORD=ipLdBy6ocmo7NMIzwbTvIV
+    - SQLDB_URI=postgresql://postgres:{postgres-password-uri-encoded.value}@postgres:5432/sqldb
+    - SQLDB_JDBCCONNECTIONSTRING=jdbc:postgresql://postgres:5432/sqldb
+    - SQLDB_DATABASENAME=sqldb
+    - OTEL_EXPORTER_OTLP_ENDPOINT=http://aspire-dashboard:18889
+    - OTEL_SERVICE_NAME=apiservice
+    - ASPNETCORE_URLS=http://+:8080;
+
+secretGenerator:
+- name: apiservice-secrets
+  envs:
+  - .apiservice.secrets

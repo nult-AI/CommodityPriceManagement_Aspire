@@ -5,6 +5,10 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <ServiceWorkerAssetsManifest>service-worker-assets.js</ServiceWorkerAssetsManifest>
+    <ContainerRuntimeIdentifier>linux-x64</ContainerRuntimeIdentifier>
+    <ContainerAppCommandInstruction>Entrypoint</ContainerAppCommandInstruction>  
+    <ContainerAppCommand>dotnet</ContainerAppCommand>
+    <ContainerAppCommandArgs>CommodityPriceManager.Web.dll</ContainerAppCommandArgs>
   </PropertyGroup>
 
   <ItemGroup>

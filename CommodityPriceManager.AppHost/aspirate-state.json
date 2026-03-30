@@ -1,0 +1,33 @@
+{
+  "projectPath": ".",
+  "inputPath": "aspirate-output",
+  "outputPath": "aspirate-output",
+  "containerImageTags": [
+    "latest"
+  ],
+  "containerBuilder": "docker",
+  "kubeContext": "minikube",
+  "outputFormat": "kustomize",
+  "skipFinalKustomizeGeneration": false,
+  "privateRegistryEmail": "aspir8@aka.ms",
+  "includeDashboard": true,
+  "useCustomNamespace": false,
+  "secrets": {
+    "salt": "o1x3oKTYleEh4kn9",
+    "hash": "dD7LyMGweeDtR1dqVPW8MbWGWpwjJ9PlnJnjjXCePZo=",
+    "secrets": {
+      "postgres-password": {
+        "value": "o1x3oKTYleEh4kn9YnKgT0vBrtCjfXbTuAAALf5rttCc8dOM8BQI5wyxyFgRy4M\u002B7cU="
+      },
+      "postgres": {
+        "POSTGRES_PASSWORD": "o1x3oKTYleEh4kn9YnKgT0vBrtCjfXbTuAAALf5rttCc8dOM8BQI5wyxyFgRy4M\u002B7cU="
+      },
+      "sqldb": {},
+      "apiservice": {
+        "ConnectionStrings__sqldb": "o1x3oKTYleEh4kn9NmN0rCrbRhF9hpXqk3Nv1t90icDj\u002BIqQ5x4VtTHH0U0U3ep9kKAnecW9eaP2klThpqMr8PwTWAZw1HqU5\u002BYMMv6etAVHT1m5cUdUhkX5BQg1TxPoUkcDPxE8T1Vis/\u002BjzyHZ2ViV7HE="
+      },
+      "webfrontend": {}
+    }
+  },
+  "processAllComponents": true
+}

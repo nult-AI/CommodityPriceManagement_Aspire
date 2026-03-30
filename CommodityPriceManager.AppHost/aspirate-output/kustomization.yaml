@@ -1,0 +1,10 @@
+resources:
+- postgres
+- apiservice
+- webfrontend
+- dashboard.yaml
+
+generatorOptions:
+  disableNameSuffixHash: true
+
+
