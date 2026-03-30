@@ -6,7 +6,28 @@ builder.AddServiceDefaults();
 
 builder.Services.AddOpenApi();
 
-builder.AddNpgsqlDbContext<AppDbContext>("sqldb");
+var connectionString = builder.Configuration.GetConnectionString("sqldb") 
+    ?? builder.Configuration["ConnectionStrings__sqldb"] 
+    ?? builder.Configuration["DATABASE_URL"];
+
+if (!string.IsNullOrEmpty(connectionString) && connectionString.StartsWith("postgresql://"))
+{
+    // Convert postgresql://user:pass@host:port/db to Npgsql format
+    var uri = new Uri(connectionString);
+    var userInfo = uri.UserInfo.Split(':');
+    connectionString = $"Host={uri.Host};Port={uri.Port};Database={uri.AbsolutePath.Trim('/')};Username={userInfo[0]};Password={userInfo[1]};SSL Mode=Require;Trust Server Certificate=true";
+}
+
+Console.WriteLine($"[DEBUG] Using Connection String: {connectionString?.Substring(0, Math.Min(connectionString.Length, 20))}...");
+
+if (string.IsNullOrEmpty(connectionString))
+{
+    throw new InvalidOperationException("Connection string 'sqldb' not found.");
+}
+
+builder.AddNpgsqlDbContext<AppDbContext>("sqldb", configureSettings: settings => {
+    settings.ConnectionString = connectionString;
+});
 
 builder.Services.ConfigureHttpJsonOptions(options =>
 {
