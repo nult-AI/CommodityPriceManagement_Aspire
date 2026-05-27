@@ -1,0 +1,64 @@
+name: CI/CD Deploy to Azure
+
+on:
+  push:
+    branches:
+      - deploy_azure
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  AZURE_ENV_NAME: prod
+  DEFAULT_AZURE_LOCATION: southeastasia
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '9.0.x'
+
+      - name: Restore
+        run: dotnet restore CommodityPriceManager.sln
+
+      - name: Build
+        run: dotnet build CommodityPriceManager.sln --configuration Release --no-restore
+
+      - name: Test
+        run: dotnet test CommodityPriceManager.sln --configuration Release --no-build --verbosity normal
+
+      - name: Install Azure Developer CLI
+        uses: azure/setup-azd@v2
+
+      - name: Azure Login (Single Secret)
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Export AZD required environment variables
+        shell: bash
+        env:
+          REPO_AZURE_LOCATION: ${{ vars.AZURE_LOCATION }}
+        run: |
+          echo "AZURE_SUBSCRIPTION_ID=$(az account show --query id -o tsv)" >> $GITHUB_ENV
+
+          if [ -n "$REPO_AZURE_LOCATION" ]; then
+            echo "AZURE_LOCATION=$REPO_AZURE_LOCATION" >> $GITHUB_ENV
+          else
+            echo "AZURE_LOCATION=$DEFAULT_AZURE_LOCATION" >> $GITHUB_ENV
+          fi
+
+      - name: Configure AZD to use Azure CLI auth
+        run: azd config set auth.useAzCliAuth "true"
+
+      - name: Deploy with AZD
+        run: azd up --environment $AZURE_ENV_NAME --no-prompt
