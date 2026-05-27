@@ -1,5 +1,6 @@
 using CommodityPriceManager.ApiService.Models;
 using Microsoft.EntityFrameworkCore;
+using Npgsql;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.AddServiceDefaults();
@@ -24,6 +25,9 @@ if (string.IsNullOrEmpty(connectionString))
 {
     throw new InvalidOperationException("Connection string 'sqldb' not found.");
 }
+
+// Ensure the database exists in PostgreSQL
+EnsureDatabaseExists(connectionString);
 
 builder.AddNpgsqlDbContext<AppDbContext>("sqldb", configureSettings: settings => {
     settings.ConnectionString = connectionString;
@@ -125,4 +129,34 @@ app.MapGet("/commodities/{id:int}/history", async (int id, AppDbContext db) =>
 });
 
 app.Run();
+
+static void EnsureDatabaseExists(string connectionString)
+{
+    try
+    {
+        var builder = new NpgsqlConnectionStringBuilder(connectionString);
+        var targetDatabase = builder.Database;
+        if (string.IsNullOrEmpty(targetDatabase)) return;
+
+        builder.Database = "postgres";
+        var adminConnectionString = builder.ToString();
+
+        using var connection = new NpgsqlConnection(adminConnectionString);
+        connection.Open();
+
+        using var checkCommand = new NpgsqlCommand($"SELECT 1 FROM pg_database WHERE datname = '{targetDatabase}'", connection);
+        var exists = checkCommand.ExecuteScalar() != null;
+
+        if (!exists)
+        {
+            using var createCommand = new NpgsqlCommand($"CREATE DATABASE \"{targetDatabase}\"", connection);
+            createCommand.ExecuteNonQuery();
+            Console.WriteLine($"[INFO] Created database '{targetDatabase}' successfully.");
+        }
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"[WARNING] Error ensuring database exists: {ex.Message}");
+    }
+}
 

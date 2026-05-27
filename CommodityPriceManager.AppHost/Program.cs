@@ -5,10 +5,13 @@ var postgres = builder.AddPostgres("postgres")
 var db = postgres.AddDatabase("sqldb");
 
 var apiService = builder.AddProject<Projects.CommodityPriceManager_ApiService>("apiservice")
+    .WithExternalHttpEndpoints()
     .WithReference(db)
     .WaitFor(db);
 
-builder.AddProject<Projects.CommodityPriceManager_Web>("webfrontend")
+builder.AddContainer("webfrontend", "commodity-webfrontend")
+    .WithDockerfile("../CommodityPriceManager.Web")
+    .WithHttpEndpoint(port: 80, targetPort: 80, name: "http")
     .WithExternalHttpEndpoints()
     .WithReference(apiService)
     .WaitFor(apiService);
