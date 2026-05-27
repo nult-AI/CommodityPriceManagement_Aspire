@@ -1,8 +1,10 @@
 # yaml-language-server: $schema=https://raw.githubusercontent.com/Azure/azure-dev/main/schemas/v1.0/azure.yaml.json
 
 name: blazor-webapp-antigravity
-services:  
+services:
   app:
     language: dotnet
     project: ./CommodityPriceManager.AppHost/CommodityPriceManager.AppHost.csproj
     host: containerapp
+    docker:
+      remoteBuild: true
