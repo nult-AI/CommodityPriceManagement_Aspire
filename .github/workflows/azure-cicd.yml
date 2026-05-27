@@ -12,53 +12,56 @@ permissions:
 
 env:
   AZURE_ENV_NAME: blazor-app-to-azure
+  # 🎯 GIẢI PHÁP CHO LỖI 2: Khống chế MSBuild dùng 1 Core duy nhất để tránh bị OOM sập RAM trên GitHub Runner
+  MSBuildMaxCpuCount: 1 
+  DOTNET_CLI_TELEMETRY_OPTOUT: 1
+  AZD_INITIAL_AUTH_MODE: LoggedInCheck
+  AZURE_RESOURCE_GROUP: rg-blazor-app-to-azure
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout
+      - name: Checkout Code
         uses: actions/checkout@v4
 
-      - name: Setup .NET
+      - name: Setup .NET SDK
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '9.0.x'
 
-      - name: Restore
+      - name: .NET Restore
         run: dotnet restore CommodityPriceManager.sln
 
-      - name: Build
+      - name: .NET Build
         run: dotnet build CommodityPriceManager.sln --configuration Release --no-restore
 
-      - name: Test
+      - name: Run Tests
         run: dotnet test CommodityPriceManager.sln --configuration Release --no-build --verbosity normal
 
-      - name: Install Azure Developer CLI
+      - name: Install Azure Developer CLI (azd)
         uses: azure/setup-azd@v2
 
-      - name: Azure Login
+      # Bước 1: Login vào Azure (Bắt buộc phải có để có quyền lấy pass)
+      - name: Log in to Azure
         uses: azure/login@v2
         with:
-          creds: ${{ secrets.AZURE_CREDENTIALS }}
-
-      - name: Restore AZD environment from single secret
-        shell: bash
-        run: |
-          mkdir -p ".azure/$AZURE_ENV_NAME"
-          printf "%s" "${{ secrets.AZD_ENV_FILE }}" > ".azure/$AZURE_ENV_NAME/.env"
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
       - name: Configure AZD to use Azure CLI auth
-        run: azd config set auth.useAzCliAuth "true"
+        run: |
+          azd config set auth.useAzCliAuth "true"
+          azd auth login --check-status
 
-      - name: Select AZD environment
-        run: azd env select $AZURE_ENV_NAME
-
-      - name: Inject postgres password for manifest
-        run: azd env set postgres_password "${{ secrets.POSTGRES_PASSWORD }}"
-
-      - name: Deploy app only
+      # Bước 3: Deploy an toàn
+      # Lúc này file .env trên GitHub Runner đã tự động có đầy đủ mật khẩu Postgres khớp 100% với trên Cloud
+      - name: Deploy Application
+        run: azd deploy --no-prompt
         env:
-          AZD_REMOTE_BUILD: "true"
-        run: azd deploy --all --no-prompt
+          AZURE_ENV_NAME: ${{ env.AZURE_ENV_NAME }}
+          AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+          AZURE_LOCATION: ${{ secrets.AZURE_LOCATION }}
+          AZURE_RESOURCE_GROUP: ${{ env.AZURE_RESOURCE_GROUP }}

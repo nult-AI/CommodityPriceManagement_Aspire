@@ -22,3 +22,11 @@ azd up
   - Name: AZURE_CREDENTIALS
   - Value: output của lệnh bên dưới
 az ad sp create-for-rbac --name "github-actions-rsa" --role contributor --scopes /subscriptions/33ec68a6-22a4-4ae4-84da-fa8a82cc7694/resourceGroups/rg-blazor-app-to-azure --sdk-auth
+
+- cấp quyền đọc cho github có thể deploy:
+az role assignment create \
+  --assignee "tên-hoặc-appId-của-github-actions-rsa" \
+  --role "Reader" \
+  --scope "/subscriptions/33ec68a6-22a4-4ae4-84da-fa8a82cc7694"
+
+  
