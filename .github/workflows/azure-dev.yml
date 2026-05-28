@@ -50,6 +50,29 @@ jobs:
         env:
           AZURE_POSTGRES_PASSWORD: ${{ secrets.AZURE_POSTGRES_PASSWORD }}
 
+      - name: Write frontend production config from AZD environment
+        shell: pwsh
+        run: |
+          $envValues = azd env get-values | Out-String
+          $match = [regex]::Match($envValues, '(?m)^AZURE_CONTAINER_APPS_ENVIRONMENT_DEFAULT_DOMAIN=(.+)$')
+
+          if (-not $match.Success) {
+            throw "Could not find AZURE_CONTAINER_APPS_ENVIRONMENT_DEFAULT_DOMAIN in azd environment."
+          }
+
+          $defaultDomain = $match.Groups[1].Value.Trim().Trim('"')
+          $apiBaseUrl = "https://apiservice.$defaultDomain"
+
+          $config = @{
+            services = @{
+              apiservice = @{
+                https = @($apiBaseUrl)
+              }
+            }
+          }
+
+          $config | ConvertTo-Json -Depth 10 | Set-Content -Path "CommodityPriceManager.Web/wwwroot/appsettings.Production.json" -Encoding utf8
+
       - name: Deploy Application
         run: azd deploy --no-prompt
         env:

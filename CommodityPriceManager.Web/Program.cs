@@ -10,9 +10,9 @@ builder.RootComponents.Add<HeadOutlet>("head::after");
 // Setup HttpClient configured for the ApiService
 builder.Services.AddHttpClient("api", client =>
 {
-    // Aspire injects service endpoints into Configuration
-    // The keys are usually 'services:apiservice:https:0' or similar
-    var endpoint = builder.Configuration["services:apiservice:https:0"] 
+    // Prefer an explicit API URL when provided, then fall back to Aspire-injected values.
+    var endpoint = builder.Configuration["ApiBaseUrl"]
+                   ?? builder.Configuration["services:apiservice:https:0"] 
                    ?? builder.Configuration["services:apiservice:http:0"]
                    ?? builder.Configuration["services:apiservice:0"]
                    ?? "https://localhost:7160"; // User mentioned 7160
